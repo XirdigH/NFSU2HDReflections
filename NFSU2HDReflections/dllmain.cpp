@@ -8,7 +8,7 @@
 
 DWORD WINAPI Thing(LPVOID);
 
-bool HDReflections, ForceEnableMirror, FrontEndReflectionBlur;
+bool HDReflections, HDReflectionBlur, FrontEndReflectionBlur, ForceEnableMirror;
 static int ResolutionX, ResolutionY;
 DWORD GameState;
 HWND windowHandle;
@@ -44,8 +44,10 @@ void Init()
 
 	// General
 	HDReflections = iniReader.ReadInteger("GENERAL", "HDReflections", 1);
+	HDReflectionBlur = iniReader.ReadInteger("GENERAL", "HDReflectionBlur", 1);
+	FrontEndReflectionBlur = iniReader.ReadInteger("GENERAL", "FrontEndReflectionBlur", 1);
 	ForceEnableMirror = iniReader.ReadInteger("GENERAL", "ForceEnableMirror", 1);
-	FrontEndReflectionBlur = iniReader.ReadInteger("GENERAL", "FrontEndReflectionBlur", 0);
+	
 
 
 	if (HDReflections)
@@ -70,6 +72,14 @@ void Init()
 		// RVM Reflection Y
 		injector::WriteMemory<uint32_t>(0x7FEE84, ResolutionY, true);
 
+	}
+
+	if (HDReflectionBlur)
+	{
+		// Reflection Blur X
+		injector::WriteMemory<uint32_t>(0x5BA105, ResolutionX, true);
+		// Reflection Blur Y
+		injector::WriteMemory<uint32_t>(0x5BA100, ResolutionY, true);
 	}
 
 	if (ForceEnableMirror)
