@@ -9,7 +9,7 @@
 DWORD WINAPI Thing(LPVOID);
 
 bool HDReflections, HDReflectionBlur, FrontEndReflectionBlur, ForceEnableMirror;
-static int ResolutionX, ResolutionY;
+static int ResolutionX, ResolutionY, ImproveReflectionLOD;
 DWORD GameState;
 HWND windowHandle;
 
@@ -27,8 +27,8 @@ void __declspec(naked) RestoreFEReflectionCodeCave()
 void __declspec(naked) ImproveReflectionLODCodeCave()
 {
 	__asm {
-		mov ecx, 0x0 // LOD setting
-		mov edx, 0x0 // LOD setting
+		mov ecx, 0x0 // Road Reflection (Vehicle) LOD setting
+		mov edx, 0x0 // Road Reflection (Vehicle) LOD setting
 		jmp ImproveReflectionLODCodeCaveExit
 	}
 }
@@ -44,6 +44,7 @@ void Init()
 
 	// General
 	HDReflections = iniReader.ReadInteger("GENERAL", "HDReflections", 1);
+	ImproveReflectionLOD = iniReader.ReadInteger("GENERAL", "ImproveReflectionLOD", 1);
 	HDReflectionBlur = iniReader.ReadInteger("GENERAL", "HDReflectionBlur", 1);
 	FrontEndReflectionBlur = iniReader.ReadInteger("GENERAL", "FrontEndReflectionBlur", 1);
 	ForceEnableMirror = iniReader.ReadInteger("GENERAL", "ForceEnableMirror", 1);
@@ -53,10 +54,7 @@ void Init()
 	if (HDReflections)
 	{
 		// Jumps
-		injector::MakeJMP(0x631665, ImproveReflectionLODCodeCave, true);
 		injector::MakeJMP(0x5BA50D, RestoreFEReflectionCodeCave, true);
-		// Reflection LOD
-		injector::WriteMemory<uint8_t>(0x4888EB, 0xEB, true);
 		// Road Reflection X
 		injector::WriteMemory<uint32_t>(0x5BA08F, ResolutionX, true);
 		injector::WriteMemory<uint32_t>(0x5BA0D1, ResolutionX, true);
@@ -72,6 +70,21 @@ void Init()
 		injector::WriteMemory<uint32_t>(0x7FEE80, ResolutionY, true);
 		injector::WriteMemory<uint32_t>(0x7FEE84, ResolutionY / 3, true);
 
+	}
+
+	if (ImproveReflectionLOD >= 1)
+	{	
+		// Road Reflection LOD
+		injector::MakeJMP(0x631665, ImproveReflectionLODCodeCave, true);
+		injector::WriteMemory<uint8_t>(0x4888EB, 0xEB, true);
+		// Vehicle Reflection LOD
+		injector::WriteMemory<uint32_t>(0x5B9C96, 0x00000000, true);
+		// RVM LOD
+		injector::WriteMemory<uint32_t>(0x5B9CE1, 0x00000000, true);
+
+		if (ImproveReflectionLOD >= 2)
+		// Full LOD Improvement
+		injector::WriteMemory<uint8_t>(0x4888F3, 0xEB, true);
 	}
 
 	if (HDReflectionBlur)
