@@ -105,7 +105,7 @@ void Init()
 	if (FrontEndReflectionBlur)
 	{
 		// Enables gaussian blur in the front end
-		injector::WriteMemory<uint16_t>(0x5CAC3A, 0x09EB, true);
+		injector::MakeNOP(0x5CAC3A, 2, true);
 	}
 }
 
