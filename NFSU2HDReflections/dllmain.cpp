@@ -85,6 +85,10 @@ void Init()
 		if (ImproveReflectionLOD >= 2)
 		// Full LOD Improvement
 		injector::WriteMemory<uint8_t>(0x4888F3, 0xEB, true);
+
+		// I don't know why I have to use the same conditional statement for this to work
+		if (ImproveReflectionLOD >= 2)
+			injector::MakeNOP(0x5D6659, 6, true);
 	}
 
 	if (HDReflectionBlur)
