@@ -104,6 +104,9 @@ void Init()
 		// Enables mirror for all camera views
 		injector::MakeNOP(0x5C2230, 2, true);
 		injector::WriteMemory<uint8_t>(0x6004A0, 0xEB, true);
+
+		// Restores light trails
+		injector::MakeNOP(0x5CAE6E, 5, true);
 	}
 
 	if (FrontEndReflectionBlur)
