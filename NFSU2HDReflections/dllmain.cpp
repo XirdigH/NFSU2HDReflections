@@ -15,6 +15,8 @@ HWND windowHandle;
 
 DWORD ImproveReflectionLODCodeCaveExit = 0x63166D;
 DWORD RestoreFEReflectionCodeCaveExit = 0x5BA513;
+DWORD RestoreLightTrailsCodeCaveExit = 0x6316F5;
+DWORD RestoreLightTrailsCodeCaveJump = 0x63198C;
 
 void __declspec(naked) RestoreFEReflectionCodeCave()
 {
@@ -30,6 +32,28 @@ void __declspec(naked) ImproveReflectionLODCodeCave()
 		mov ecx, 0x0 // Road Reflection (Vehicle) LOD setting
 		mov edx, 0x0 // Road Reflection (Vehicle) LOD setting
 		jmp ImproveReflectionLODCodeCaveExit
+	}
+}
+
+void __declspec(naked) RestoreLightTrailsCodeCave()
+{
+	__asm {
+		push ebp
+		mov ebp, esp
+		and esp, 0xFFFFFFF6
+		sub esp, 0x00000314
+		mov eax, [0x008026C8]
+		test eax, eax
+		push ebx
+		push esi
+		push edi
+		je RestoreLightTrailsCodeCave2
+		mov edi, dword ptr ds : [ebp + 0x08]
+		push edi
+		jmp RestoreLightTrailsCodeCaveExit
+
+	RestoreLightTrailsCodeCave2 :
+		jmp RestoreLightTrailsCodeCaveJump
 	}
 }
 
@@ -106,7 +130,8 @@ void Init()
 		injector::WriteMemory<uint8_t>(0x6004A0, 0xEB, true);
 
 		// Restores light trails
-		injector::MakeNOP(0x5CAE6E, 5, true);
+		injector::MakeCALL(0x5CAE6E, RestoreLightTrailsCodeCave, true);
+
 	}
 
 	if (FrontEndReflectionBlur)
