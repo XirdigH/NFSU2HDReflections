@@ -13,7 +13,8 @@ static int ResolutionX, ResolutionY, ImproveReflectionLOD;
 DWORD GameState;
 HWND windowHandle;
 
-DWORD ImproveReflectionLODCodeCaveExit = 0x63166D;
+DWORD ImproveReflectionLODCodeCave1Exit = 0x63166D;
+DWORD ImproveReflectionLODCodeCave2Exit = 0x6311EC;
 DWORD RestoreFEReflectionCodeCaveExit = 0x5BA513;
 DWORD RestoreLightTrailsCodeCaveExit = 0x6316F5;
 DWORD RestoreLightTrailsCodeCaveJump = 0x63198C;
@@ -26,12 +27,21 @@ void __declspec(naked) RestoreFEReflectionCodeCave()
 	}
 }
 
-void __declspec(naked) ImproveReflectionLODCodeCave()
+void __declspec(naked) ImproveReflectionLODCodeCave1()
 {
 	__asm {
 		mov ecx, 0x0 // Road Reflection (Vehicle) LOD setting
-		mov edx, 0x0 // Road Reflection (Vehicle) LOD setting
-		jmp ImproveReflectionLODCodeCaveExit
+		mov edx, 0x0 // Road Reflection (Wheels) LOD setting
+		jmp ImproveReflectionLODCodeCave1Exit
+	}
+}
+
+void __declspec(naked) ImproveReflectionLODCodeCave2()
+{
+	__asm {
+		mov eax, 0x0 // FE Road Reflection (Vehicle) LOD setting
+		mov ecx, 0x0 // FE Road Reflection (Wheels) LOD setting
+		jmp ImproveReflectionLODCodeCave2Exit
 	}
 }
 
@@ -99,7 +109,8 @@ void Init()
 	if (ImproveReflectionLOD >= 1)
 	{	
 		// Road Reflection LOD
-		injector::MakeJMP(0x631665, ImproveReflectionLODCodeCave, true);
+		injector::MakeJMP(0x631665, ImproveReflectionLODCodeCave1, true);
+		injector::MakeJMP(0x6311E4, ImproveReflectionLODCodeCave2, true);
 		injector::WriteMemory<uint8_t>(0x4888EB, 0xEB, true);
 		// Vehicle Reflection LOD
 		injector::WriteMemory<uint32_t>(0x5B9C96, 0x00000000, true);
