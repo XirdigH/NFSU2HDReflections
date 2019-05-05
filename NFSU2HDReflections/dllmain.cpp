@@ -8,7 +8,7 @@
 
 DWORD WINAPI Thing(LPVOID);
 
-bool HDReflections, HDReflectionBlur, FrontEndReflectionBlur, ForceEnableMirror;
+bool HDReflections, HDReflectionBlur, FrontEndReflectionBlur, ForceEnableMirror, RestoreSkybox;
 static int ResolutionX, ResolutionY, ImproveReflectionLOD;
 DWORD GameState;
 HWND windowHandle;
@@ -18,6 +18,11 @@ DWORD ImproveReflectionLODCodeCave2Exit = 0x6311EC;
 DWORD RestoreFEReflectionCodeCaveExit = 0x5BA513;
 DWORD RestoreLightTrailsCodeCaveExit = 0x6316F5;
 DWORD RestoreLightTrailsCodeCaveJump = 0x63198C;
+DWORD RestoreSkyboxCodeCaveExit = 0x5CAE68;
+DWORD sub_60F880 = 0x60F880;
+DWORD sub_5CF420 = 0x5CF420;
+DWORD ExtendDistanceCodeCave1Exit = 0x5C7F14;
+DWORD ExtendDistanceCodeCave2Exit = 0x5C7F12;
 
 void __declspec(naked) RestoreFEReflectionCodeCave()
 {
@@ -67,6 +72,35 @@ void __declspec(naked) RestoreLightTrailsCodeCave()
 	}
 }
 
+void __declspec(naked) RestoreSkyboxCodeCave()
+{
+	__asm {
+		push 0x00832F30
+		call sub_60F880 // Skybox function call
+		add esp, 0x04
+		call sub_5CF420
+		push 0x01
+		push esi
+		lea ecx, [esp + 0x78]
+		jmp RestoreSkyboxCodeCaveExit
+	}
+}
+
+void __declspec(naked) ExtendDistanceCodeCave1()
+{
+	__asm {
+		je ExtendDistanceCodeCave2
+		cmp ecx, 0x03
+		je ExtendDistanceCodeCave2
+		jmp ExtendDistanceCodeCave1Exit
+
+	ExtendDistanceCodeCave2:
+		mov dword ptr ds : [esp + 0x0C], 0x466A6000
+		jmp ExtendDistanceCodeCave2Exit
+	}
+}
+
+
 void Init()
 {
 	// Read values from .ini
@@ -78,10 +112,11 @@ void Init()
 
 	// General
 	HDReflections = iniReader.ReadInteger("GENERAL", "HDReflections", 1);
-	ImproveReflectionLOD = iniReader.ReadInteger("GENERAL", "ImproveReflectionLOD", 1);
+	ImproveReflectionLOD = iniReader.ReadInteger("GENERAL", "ImproveReflectionLOD", 2);
 	HDReflectionBlur = iniReader.ReadInteger("GENERAL", "HDReflectionBlur", 1);
 	FrontEndReflectionBlur = iniReader.ReadInteger("GENERAL", "FrontEndReflectionBlur", 1);
 	ForceEnableMirror = iniReader.ReadInteger("GENERAL", "ForceEnableMirror", 1);
+	RestoreSkybox = iniReader.ReadInteger("GENERAL", "RestoreSkybox", 1);
 	
 
 
@@ -142,13 +177,20 @@ void Init()
 
 		// Restores light trails
 		injector::MakeCALL(0x5CAE6E, RestoreLightTrailsCodeCave, true);
-
 	}
 
 	if (FrontEndReflectionBlur)
 	{
 		// Enables gaussian blur in the front end
 		injector::MakeNOP(0x5CAC3A, 2, true);
+	}
+
+	if (RestoreSkybox)
+	{
+		// Restores skybox for RVM
+		injector::MakeJMP(0x5CAE61, RestoreSkyboxCodeCave, true);
+		// Extends render distance so skybox is visible
+		injector::MakeJMP(0x5C7F08, ExtendDistanceCodeCave1, true);
 	}
 }
 
