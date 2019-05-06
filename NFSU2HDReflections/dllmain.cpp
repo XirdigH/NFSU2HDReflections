@@ -8,21 +8,27 @@
 
 DWORD WINAPI Thing(LPVOID);
 
-bool HDReflections, HDReflectionBlur, FrontEndReflectionBlur, ForceEnableMirror, RestoreSkybox;
+bool HDReflections, HDReflectionBlur, FrontEndReflectionBlur, ForceEnableMirror, RestoreMirrorSkybox, RestoreVehicleSkybox, RestoreRoadSkybox;
 static int ResolutionX, ResolutionY, ImproveReflectionLOD;
 DWORD GameState;
 HWND windowHandle;
 
-DWORD ImproveReflectionLODCodeCave1Exit = 0x63166D;
-DWORD ImproveReflectionLODCodeCave2Exit = 0x6311EC;
+DWORD VehicleLODCodeCaveExit = 0x63166D;
+DWORD FEVehicleLODCodeCaveExit = 0x6311EC;
+DWORD RoadReflectionLODCodeCave1Exit = 0x5D665F;
+DWORD RoadReflectionLODCodeCave2Exit = 0x5D6720;
+DWORD RoadReflectionLODCodeCave2Jump = 0x5D672E;
 DWORD RestoreFEReflectionCodeCaveExit = 0x5BA513;
 DWORD RestoreLightTrailsCodeCaveExit = 0x6316F5;
 DWORD RestoreLightTrailsCodeCaveJump = 0x63198C;
-DWORD RestoreSkyboxCodeCaveExit = 0x5CAE68;
+DWORD RestoreMirrorSkyboxCodeCaveExit = 0x5CAE68;
+DWORD RestoreVehicleSkyboxCodeCaveExit = 0x5CAD84;
+DWORD RestoreRoadSkyboxCodeCaveExit = 0x5CAB60;
+DWORD FlipRoadSkyboxCodeCaveExit = 0x60F95D;
+DWORD SkyboxOrientation = 0xC5FA0000;
 DWORD sub_60F880 = 0x60F880;
 DWORD sub_5CF420 = 0x5CF420;
-DWORD ExtendDistanceCodeCave1Exit = 0x5C7F14;
-DWORD ExtendDistanceCodeCave2Exit = 0x5C7F12;
+DWORD ExtendVehicleRenderDistanceCodeCaveExit = 0x5C4FB5;
 
 void __declspec(naked) RestoreFEReflectionCodeCave()
 {
@@ -32,21 +38,44 @@ void __declspec(naked) RestoreFEReflectionCodeCave()
 	}
 }
 
-void __declspec(naked) ImproveReflectionLODCodeCave1()
+void __declspec(naked) VehicleLODCodeCave()
 {
 	__asm {
 		mov ecx, 0x0 // Road Reflection (Vehicle) LOD setting
 		mov edx, 0x0 // Road Reflection (Wheels) LOD setting
-		jmp ImproveReflectionLODCodeCave1Exit
+		jmp VehicleLODCodeCaveExit
 	}
 }
 
-void __declspec(naked) ImproveReflectionLODCodeCave2()
+void __declspec(naked) FEVehicleLODCodeCave()
 {
 	__asm {
 		mov eax, 0x0 // FE Road Reflection (Vehicle) LOD setting
 		mov ecx, 0x0 // FE Road Reflection (Wheels) LOD setting
-		jmp ImproveReflectionLODCodeCave2Exit
+		jmp FEVehicleLODCodeCaveExit
+	}
+}
+
+void __declspec(naked) RoadReflectionLODCodeCave1()
+{
+	__asm {
+		cmp dword ptr ds : [edi + 0x3C], 0x41F9880C // moving mirror mask
+		je RoadReflectionLODCodeCave2
+		cmp dword ptr ds : [edi + 0x3C], 0x40E96E29 // freeway sign
+		je RoadReflectionLODCodeCave2
+		cmp dword ptr ds : [edi + 0x3C], 0x45976DD4 // hills
+		je RoadReflectionLODCodeCave2
+		cmp dword ptr ds : [edi + 0x3C], 0x42212D15 // white box
+		je RoadReflectionLODCodeCave2
+		jmp RoadReflectionLODCodeCave1Exit
+
+	RoadReflectionLODCodeCave2:
+		test byte ptr ds : [esi + 0x1B], 0x04
+		je RoadReflectionLODCodeCave2Condtional
+		jmp RoadReflectionLODCodeCave2Exit
+
+	RoadReflectionLODCodeCave2Condtional:
+		jmp RoadReflectionLODCodeCave2Jump
 	}
 }
 
@@ -57,7 +86,7 @@ void __declspec(naked) RestoreLightTrailsCodeCave()
 		mov ebp, esp
 		and esp, 0xFFFFFFF6
 		sub esp, 0x00000314
-		mov eax, [0x008026C8]
+		mov eax, dword ptr ds : [0x008026C8]
 		test eax, eax
 		push ebx
 		push esi
@@ -72,31 +101,66 @@ void __declspec(naked) RestoreLightTrailsCodeCave()
 	}
 }
 
-void __declspec(naked) RestoreSkyboxCodeCave()
+void __declspec(naked) RestoreMirrorSkyboxCodeCave()
 {
 	__asm {
-		push 0x00832F30
+		push esi
 		call sub_60F880 // Skybox function call
 		add esp, 0x04
 		call sub_5CF420
 		push 0x01
 		push esi
-		lea ecx, [esp + 0x78]
-		jmp RestoreSkyboxCodeCaveExit
+		lea ecx, dword ptr ds : [esp + 0x78]
+		jmp RestoreMirrorSkyboxCodeCaveExit
 	}
 }
 
-void __declspec(naked) ExtendDistanceCodeCave1()
+void __declspec(naked) RestoreVehicleSkyboxCodeCave()
 {
 	__asm {
-		je ExtendDistanceCodeCave2
-		cmp ecx, 0x03
-		je ExtendDistanceCodeCave2
-		jmp ExtendDistanceCodeCave1Exit
+		push esi
+		call sub_60F880 // Skybox function call
+		add esp, 0x04
+		call sub_5CF420
+		push ebx
+		push esi
+		lea ecx, dword ptr ds : [esp + 0x78]
+		jmp RestoreVehicleSkyboxCodeCaveExit
+	}
+}
 
-	ExtendDistanceCodeCave2:
-		mov dword ptr ds : [esp + 0x0C], 0x466A6000
-		jmp ExtendDistanceCodeCave2Exit
+void __declspec(naked) RestoreRoadSkyboxCodeCave()
+{
+	__asm {
+		push esi
+		call sub_60F880 // Skybox function call
+		add esp, 0x04
+		call sub_5CF420
+		push 0x08
+		push esi
+		lea ecx, dword ptr ds : [esp + 0x78]
+		jmp RestoreRoadSkyboxCodeCaveExit
+	}
+}
+
+void __declspec(naked) FlipRoadSkyboxCodeCave()
+{
+	__asm {
+		fld dword ptr ds : [eax + 0x08]
+		cmp edx, 0x04
+		jne FlipRoadSkyboxCodeCave2
+		fadd dword ptr ds : [SkyboxOrientation]
+	FlipRoadSkyboxCodeCave2:
+		mov eax, dword ptr ds : [0x82DA5C]
+		jmp FlipRoadSkyboxCodeCaveExit
+	}
+}
+
+void __declspec(naked) ExtendVehicleRenderDistanceCodeCave()
+{
+	__asm {
+		mov edx, 0x461C4000
+		jmp ExtendVehicleRenderDistanceCodeCaveExit
 	}
 }
 
@@ -116,7 +180,9 @@ void Init()
 	HDReflectionBlur = iniReader.ReadInteger("GENERAL", "HDReflectionBlur", 1);
 	FrontEndReflectionBlur = iniReader.ReadInteger("GENERAL", "FrontEndReflectionBlur", 1);
 	ForceEnableMirror = iniReader.ReadInteger("GENERAL", "ForceEnableMirror", 1);
-	RestoreSkybox = iniReader.ReadInteger("GENERAL", "RestoreSkybox", 1);
+	RestoreMirrorSkybox = iniReader.ReadInteger("GENERAL", "RestoreMirrorSkybox", 1);
+	RestoreVehicleSkybox = iniReader.ReadInteger("GENERAL", "RestoreVehicleSkybox", 1);
+	RestoreRoadSkybox = iniReader.ReadInteger("GENERAL", "RestoreRoadSkybox", 1);
 	
 
 
@@ -144,8 +210,8 @@ void Init()
 	if (ImproveReflectionLOD >= 1)
 	{	
 		// Road Reflection LOD
-		injector::MakeJMP(0x631665, ImproveReflectionLODCodeCave1, true);
-		injector::MakeJMP(0x6311E4, ImproveReflectionLODCodeCave2, true);
+		injector::MakeJMP(0x631665, VehicleLODCodeCave, true);
+		injector::MakeJMP(0x6311E4, FEVehicleLODCodeCave, true);
 		injector::WriteMemory<uint8_t>(0x4888EB, 0xEB, true);
 		// Vehicle Reflection LOD
 		injector::WriteMemory<uint32_t>(0x5B9C96, 0x00000000, true);
@@ -155,10 +221,8 @@ void Init()
 		if (ImproveReflectionLOD >= 2)
 		// Full LOD Improvement
 		injector::WriteMemory<uint8_t>(0x4888F3, 0xEB, true);
-
-		// I don't know why I have to use the same conditional statement for this to work
 		if (ImproveReflectionLOD >= 2)
-			injector::MakeNOP(0x5D6659, 6, true);
+		injector::MakeJMP(0x5D671A, RoadReflectionLODCodeCave1, true);
 	}
 
 	if (HDReflectionBlur)
@@ -185,12 +249,34 @@ void Init()
 		injector::MakeNOP(0x5CAC3A, 2, true);
 	}
 
-	if (RestoreSkybox)
+	if (RestoreMirrorSkybox)
 	{
 		// Restores skybox for RVM
-		injector::MakeJMP(0x5CAE61, RestoreSkyboxCodeCave, true);
+		injector::MakeJMP(0x5CAE61, RestoreMirrorSkyboxCodeCave, true);
 		// Extends render distance so skybox is visible
-		injector::MakeJMP(0x5C7F08, ExtendDistanceCodeCave1, true);
+		injector::WriteMemory<uint32_t>(0x7870D8, 0x461C4000, true);
+	}
+
+	if (RestoreVehicleSkybox)
+	{
+		// Restores skybox for vehicle reflection
+		injector::MakeJMP(0x5CAD7E, RestoreVehicleSkyboxCodeCave, true);
+		// Extends render distance so skybox is visible
+		injector::MakeJMP(0x5C4FAE, ExtendVehicleRenderDistanceCodeCave, true);
+		// Enables skybox
+		injector::MakeNOP(0x60F9D6, 2, true);
+		injector::WriteMemory<uint8_t>(0x60F9F6, 0xEB, true);
+	}
+
+	if (RestoreRoadSkybox)
+	{
+		// Restores skybox for road reflection
+		injector::MakeJMP(0x5CAB59, RestoreRoadSkyboxCodeCave, true);
+		// Flips skybox so it's visible in road reflection
+		injector::MakeJMP(0x60F955, FlipRoadSkyboxCodeCave, true);
+		// Enables skybox
+		injector::MakeNOP(0x60F9D6, 2, true);
+		injector::WriteMemory<uint8_t>(0x60F9F6, 0xEB, true);
 	}
 }
 
