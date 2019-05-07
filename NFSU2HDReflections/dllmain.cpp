@@ -15,9 +15,9 @@ HWND windowHandle;
 
 DWORD VehicleLODCodeCaveExit = 0x63166D;
 DWORD FEVehicleLODCodeCaveExit = 0x6311EC;
-DWORD RoadReflectionLODCodeCave1Exit = 0x5D665F;
-DWORD RoadReflectionLODCodeCave2Exit = 0x5D6720;
-DWORD RoadReflectionLODCodeCave2Jump = 0x5D672E;
+DWORD RoadReflectionLODCodeCaveExit = 0x5D665F;
+DWORD RoadReflectionLODCodeCavePart2Exit = 0x5D6720;
+DWORD RoadReflectionLODCodeCavePart2Jump = 0x5D672E;
 DWORD RestoreFEReflectionCodeCaveExit = 0x5BA513;
 DWORD RestoreLightTrailsCodeCaveExit = 0x6316F5;
 DWORD RestoreLightTrailsCodeCaveJump = 0x63198C;
@@ -29,6 +29,7 @@ DWORD SkyboxOrientation = 0xC5FA0000;
 DWORD sub_60F880 = 0x60F880;
 DWORD sub_5CF420 = 0x5CF420;
 DWORD ExtendVehicleRenderDistanceCodeCaveExit = 0x5C4FB5;
+DWORD AnimatedMirrorMaskFixCodeCaveExit = 0x5B7D85;
 
 void __declspec(naked) RestoreFEReflectionCodeCave()
 {
@@ -56,26 +57,24 @@ void __declspec(naked) FEVehicleLODCodeCave()
 	}
 }
 
-void __declspec(naked) RoadReflectionLODCodeCave1()
+void __declspec(naked) RoadReflectionLODCodeCave()
 {
 	__asm {
-		cmp dword ptr ds : [edi + 0x3C], 0x41F9880C // moving mirror mask
-		je RoadReflectionLODCodeCave2
 		cmp dword ptr ds : [edi + 0x3C], 0x40E96E29 // freeway sign
-		je RoadReflectionLODCodeCave2
+		je RoadReflectionLODCodeCavePart2
 		cmp dword ptr ds : [edi + 0x3C], 0x45976DD4 // hills
-		je RoadReflectionLODCodeCave2
+		je RoadReflectionLODCodeCavePart2
 		cmp dword ptr ds : [edi + 0x3C], 0x42212D15 // white box
-		je RoadReflectionLODCodeCave2
-		jmp RoadReflectionLODCodeCave1Exit
+		je RoadReflectionLODCodeCavePart2
+		jmp RoadReflectionLODCodeCaveExit
 
-	RoadReflectionLODCodeCave2:
+	RoadReflectionLODCodeCavePart2:
 		test byte ptr ds : [esi + 0x1B], 0x04
-		je RoadReflectionLODCodeCave2Condtional
-		jmp RoadReflectionLODCodeCave2Exit
+		je RoadReflectionLODCodeCavePart2Condtional
+		jmp RoadReflectionLODCodeCavePart2Exit
 
-	RoadReflectionLODCodeCave2Condtional:
-		jmp RoadReflectionLODCodeCave2Jump
+	RoadReflectionLODCodeCavePart2Condtional:
+		jmp RoadReflectionLODCodeCavePart2Jump
 	}
 }
 
@@ -91,12 +90,12 @@ void __declspec(naked) RestoreLightTrailsCodeCave()
 		push ebx
 		push esi
 		push edi
-		je RestoreLightTrailsCodeCave2
+		je RestoreLightTrailsCodeCavePart2
 		mov edi, dword ptr ds : [ebp + 0x08]
 		push edi
 		jmp RestoreLightTrailsCodeCaveExit
 
-	RestoreLightTrailsCodeCave2 :
+	RestoreLightTrailsCodeCavePart2:
 		jmp RestoreLightTrailsCodeCaveJump
 	}
 }
@@ -148,9 +147,9 @@ void __declspec(naked) FlipRoadSkyboxCodeCave()
 	__asm {
 		fld dword ptr ds : [eax + 0x08]
 		cmp edx, 0x04
-		jne FlipRoadSkyboxCodeCave2
+		jne FlipRoadSkyboxCodeCavePart2
 		fadd dword ptr ds : [SkyboxOrientation]
-	FlipRoadSkyboxCodeCave2:
+	FlipRoadSkyboxCodeCavePart2:
 		mov eax, dword ptr ds : [0x82DA5C]
 		jmp FlipRoadSkyboxCodeCaveExit
 	}
@@ -161,6 +160,26 @@ void __declspec(naked) ExtendVehicleRenderDistanceCodeCave()
 	__asm {
 		mov edx, 0x461C4000
 		jmp ExtendVehicleRenderDistanceCodeCaveExit
+	}
+}
+
+void __declspec(naked) AnimatedMirrorMaskFixCodeCave()
+{
+	__asm {
+		cmp dword ptr ds : [ecx + 0x0C], 0x5F4E5254 // "TRN_"
+		jne AnimatedMirrorMaskFixCodeCavePart2
+		cmp dword ptr ds : [ecx + 0x10], 0x45544157 // "WATE"
+		jne AnimatedMirrorMaskFixCodeCavePart2
+		cmp dword ptr ds : [ecx + 0x14], 0x4C414652 // "RFAL"
+		jne AnimatedMirrorMaskFixCodeCavePart2
+		cmp byte ptr ds : [ecx + 0x54], 0x01 // Checks if the address has the correct value
+		jne AnimatedMirrorMaskFixCodeCavePart2
+		mov byte ptr ds : [ecx + 0x54], 0x00 // Disables mirror mask animation
+
+	AnimatedMirrorMaskFixCodeCavePart2 :
+		push ecx
+		movsx eax, byte ptr ds : [ecx + 0x58]
+		jmp AnimatedMirrorMaskFixCodeCaveExit
 	}
 }
 
@@ -209,6 +228,8 @@ void Init()
 
 	if (ImproveReflectionLOD >= 1)
 	{	
+		// Fixes moving RVM mask
+		injector::MakeJMP(0x5B7D80, AnimatedMirrorMaskFixCodeCave, true);
 		// Road Reflection LOD
 		injector::MakeJMP(0x631665, VehicleLODCodeCave, true);
 		injector::MakeJMP(0x6311E4, FEVehicleLODCodeCave, true);
@@ -222,7 +243,7 @@ void Init()
 		// Full LOD Improvement
 		injector::WriteMemory<uint8_t>(0x4888F3, 0xEB, true);
 		if (ImproveReflectionLOD >= 2)
-		injector::MakeJMP(0x5D671A, RoadReflectionLODCodeCave1, true);
+		injector::MakeJMP(0x5D671A, RoadReflectionLODCodeCave, true);
 	}
 
 	if (HDReflectionBlur)
