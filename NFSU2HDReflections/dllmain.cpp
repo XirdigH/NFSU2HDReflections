@@ -8,8 +8,8 @@
 
 DWORD WINAPI Thing(LPVOID);
 
-bool HDReflections, HDReflectionBlur, FrontEndReflectionBlur, ForceEnableMirror, RestoreMirrorSkybox, RestoreVehicleSkybox, RestoreRoadSkybox;
-static int ResolutionX, ResolutionY, ImproveReflectionLOD;
+bool HDReflections, HDReflectionBlur, FrontEndReflectionBlur, ForceEnableMirror;
+static int ResolutionX, ResolutionY, ImproveReflectionLOD, RestoreSkybox;
 DWORD GameState;
 HWND windowHandle;
 
@@ -199,9 +199,7 @@ void Init()
 	HDReflectionBlur = iniReader.ReadInteger("GENERAL", "HDReflectionBlur", 1);
 	FrontEndReflectionBlur = iniReader.ReadInteger("GENERAL", "FrontEndReflectionBlur", 1);
 	ForceEnableMirror = iniReader.ReadInteger("GENERAL", "ForceEnableMirror", 1);
-	RestoreMirrorSkybox = iniReader.ReadInteger("GENERAL", "RestoreMirrorSkybox", 1);
-	RestoreVehicleSkybox = iniReader.ReadInteger("GENERAL", "RestoreVehicleSkybox", 1);
-	RestoreRoadSkybox = iniReader.ReadInteger("GENERAL", "RestoreRoadSkybox", 1);
+	RestoreSkybox = iniReader.ReadInteger("GENERAL", "RestoreSkybox", 1);
 	
 
 
@@ -270,27 +268,16 @@ void Init()
 		injector::MakeNOP(0x5CAC3A, 2, true);
 	}
 
-	if (RestoreMirrorSkybox)
+	if (RestoreSkybox)
 	{
 		// Restores skybox for RVM
 		injector::MakeJMP(0x5CAE61, RestoreMirrorSkyboxCodeCave, true);
-		// Extends render distance so skybox is visible
+		// Extends render RVM distance so skybox is visible
 		injector::WriteMemory<uint32_t>(0x7870D8, 0x461C4000, true);
-	}
-
-	if (RestoreVehicleSkybox)
-	{
 		// Restores skybox for vehicle reflection
 		injector::MakeJMP(0x5CAD7E, RestoreVehicleSkyboxCodeCave, true);
-		// Extends render distance so skybox is visible
+		// Extends vehicle reflection distance so skybox is visible
 		injector::MakeJMP(0x5C4FAE, ExtendVehicleRenderDistanceCodeCave, true);
-		// Enables skybox
-		injector::MakeNOP(0x60F9D6, 2, true);
-		injector::WriteMemory<uint8_t>(0x60F9F6, 0xEB, true);
-	}
-
-	if (RestoreRoadSkybox)
-	{
 		// Restores skybox for road reflection
 		injector::MakeJMP(0x5CAB59, RestoreRoadSkyboxCodeCave, true);
 		// Flips skybox so it's visible in road reflection
