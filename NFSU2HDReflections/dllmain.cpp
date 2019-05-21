@@ -249,9 +249,9 @@ void Init()
 	if (HDReflectionBlur)
 	{
 		// Reflection Blur X
-		injector::WriteMemory<uint32_t>(0x5BA105, ResolutionX, true);
+		injector::WriteMemory<uint32_t>(0x5BA105, ResolutionX * RoadScale, true);
 		// Reflection Blur Y
-		injector::WriteMemory<uint32_t>(0x5BA100, ResolutionY, true);
+		injector::WriteMemory<uint32_t>(0x5BA100, ResolutionY * RoadScale, true);
 	}
 
 	if (ForceEnableMirror)
