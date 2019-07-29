@@ -6,13 +6,12 @@
 #include "..\includes\IniReader.h"
 #include <d3d9.h>
 
-DWORD WINAPI Thing(LPVOID);
-
-bool HDReflections, HDReflectionBlur, FrontEndReflectionBlur, ForceEnableMirror;
+bool HDReflections, HDReflectionBlur, FrontEndReflectionBlur, ForceEnableMirror, ExtendRenderDistance;
 static int ResolutionX, ResolutionY, ImproveReflectionLOD, RestoreSkybox;
 static float RoadScale, VehicleScale, MirrorScale;
-DWORD GameState;
-HWND windowHandle;
+static float SkyboxOrientation = -8000;
+static float VehichleSkyboxRenderDist = 0.00625;
+static float RVMSkyboxRenderDist = 0.0185;
 
 DWORD VehicleLODCodeCaveExit = 0x63166D;
 DWORD FEVehicleLODCodeCaveExit = 0x6311EC;
@@ -26,11 +25,11 @@ DWORD RestoreMirrorSkyboxCodeCaveExit = 0x5CAE68;
 DWORD RestoreVehicleSkyboxCodeCaveExit = 0x5CAD84;
 DWORD RestoreRoadSkyboxCodeCaveExit = 0x5CAB60;
 DWORD FlipRoadSkyboxCodeCaveExit = 0x60F95D;
-DWORD SkyboxOrientation = 0xC5FA0000;
 DWORD sub_60F880 = 0x60F880;
 DWORD sub_5CF420 = 0x5CF420;
 DWORD ExtendVehicleRenderDistanceCodeCaveExit = 0x5C4FB5;
 DWORD AnimatedMirrorMaskFixCodeCaveExit = 0x5B7D85;
+DWORD SkyboxRenderDistanceCodeCaveExit = 0x60F9DE;
 
 void __declspec(naked) RestoreFEReflectionCodeCave()
 {
@@ -184,6 +183,31 @@ void __declspec(naked) AnimatedMirrorMaskFixCodeCave()
 	}
 }
 
+void __declspec(naked) SkyboxRenderDistanceCodeCave()
+{
+	__asm {
+		cmp byte ptr ds : [ExtendRenderDistance], 0x00
+		jg SkyboxRenderDistanceCodeCavePart3 // jumps if extend render distance is enabled
+		cmp edx,0x03
+		je SkyboxRenderDistanceCodeCavePart2 // jumps if rearview mirror
+		cmp edx, 0x01
+		je SkyboxRenderDistanceCodeCavePart3 // jumps if main render
+		cmp edx, 0x04
+		je SkyboxRenderDistanceCodeCavePart3 // jumps if road reflection
+
+		fld dword ptr ds : [VehichleSkyboxRenderDist] // render distance: 0.00625
+		jmp SkyboxRenderDistanceCodeCaveExit
+		
+	SkyboxRenderDistanceCodeCavePart2:
+		fld dword ptr ds : [RVMSkyboxRenderDist] // render distance: 0.01825
+		jmp SkyboxRenderDistanceCodeCaveExit
+
+	SkyboxRenderDistanceCodeCavePart3:
+		fld dword ptr ds : [0x7A6768] // default render distance: 1.0
+		jmp SkyboxRenderDistanceCodeCaveExit
+	}
+}
+
 
 void Init()
 {
@@ -204,6 +228,7 @@ void Init()
 	FrontEndReflectionBlur = iniReader.ReadInteger("GENERAL", "FrontEndReflectionBlur", 1);
 	ForceEnableMirror = iniReader.ReadInteger("GENERAL", "ForceEnableMirror", 1);
 	RestoreSkybox = iniReader.ReadInteger("GENERAL", "RestoreSkybox", 1);
+	ExtendRenderDistance = iniReader.ReadInteger("GENERAL", "ExtendRenderDistance", 0);
 	
 
 	if (HDReflections)
@@ -274,19 +299,23 @@ void Init()
 	{
 		// Restores skybox for RVM
 		injector::MakeJMP(0x5CAE61, RestoreMirrorSkyboxCodeCave, true);
-		// Extends render RVM distance so skybox is visible
-		injector::WriteMemory<uint32_t>(0x7870D8, 0x461C4000, true);
 		// Restores skybox for vehicle reflection
 		injector::MakeJMP(0x5CAD7E, RestoreVehicleSkyboxCodeCave, true);
-		// Extends vehicle reflection distance so skybox is visible
-		injector::MakeJMP(0x5C4FAE, ExtendVehicleRenderDistanceCodeCave, true);
 		// Restores skybox for road reflection
 		injector::MakeJMP(0x5CAB59, RestoreRoadSkyboxCodeCave, true);
 		// Flips skybox so it's visible in road reflection
 		injector::MakeJMP(0x60F955, FlipRoadSkyboxCodeCave, true);
 		// Enables skybox
-		injector::MakeNOP(0x60F9D6, 2, true);
 		injector::WriteMemory<uint8_t>(0x60F9F6, 0xEB, true);
+		injector::MakeJMP(0x60F9D6, SkyboxRenderDistanceCodeCave, true);
+	}
+
+	if (ExtendRenderDistance)
+	{
+		// Extends vehicle reflection distance so skybox is visible
+		injector::MakeJMP(0x5C4FAE, ExtendVehicleRenderDistanceCodeCave, true);
+		// Extends render RVM distance so skybox is visible
+		injector::WriteMemory<uint32_t>(0x7870D8, 0x461C4000, true);
 	}
 }
 
