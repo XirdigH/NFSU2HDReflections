@@ -12,6 +12,7 @@
 - FrontEndReflectionBlur : Enables road reflection blur in the front end.  
 - ForceEnableMirror : Rearview mirror will be visible for all camera views.  
 - RestoreSkybox : Adds the skybox to reflections.  
+- ExtendRenderDistance : Increases the render distance of vehicle reflections and the rearview mirror.  
 
 ## Credits
 [Aero_](https://github.com/AeroWidescreen) : Creator of NFSU2 HD Reflections.  
