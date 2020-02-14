@@ -7,12 +7,12 @@
 #include <d3d9.h>
 
 bool HDReflections, HDReflectionBlur, FrontEndReflectionBlur, ForceEnableMirror, ExtendRenderDistance;
-static int ResolutionX, ResolutionY, ImproveReflectionLOD, RestoreSkybox;
+int ResolutionX, ResolutionY, ImproveReflectionLOD, RestoreSkybox;
 int ResX, ResY;
-static float RoadScale, VehicleScale, MirrorScale;
-static float SkyboxOrientation = -8000;
-static float VehichleSkyboxRenderDist = 0.00625;
-static float RVMSkyboxRenderDist = 0.0185;
+float RoadScale, VehicleScale, MirrorScale;
+float SkyboxOrientation = -8000;
+float VehichleSkyboxRenderDist = 0.00625;
+float RVMSkyboxRenderDist = 0.0185;
 
 DWORD VehicleLODCodeCaveExit = 0x63166D;
 DWORD FEVehicleLODCodeCaveExit = 0x6311EC;
@@ -325,7 +325,6 @@ void Init()
 	}
 }
 
-
 BOOL APIENTRY DllMain(HMODULE /*hModule*/, DWORD reason, LPVOID /*lpReserved*/)
 {
 	if (reason == DLL_PROCESS_ATTACH)
@@ -343,6 +342,5 @@ BOOL APIENTRY DllMain(HMODULE /*hModule*/, DWORD reason, LPVOID /*lpReserved*/)
 			return FALSE;
 		}
 	}
-	return TRUE;
-	
+	return TRUE;	
 }
