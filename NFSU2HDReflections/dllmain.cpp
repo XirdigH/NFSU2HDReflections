@@ -9,7 +9,7 @@
 bool HDReflections, HDReflectionBlur, FrontEndReflectionBlur, ForceEnableMirror, ExtendRenderDistance;
 int ResolutionX, ResolutionY, ImproveReflectionLOD, RestoreSkybox;
 int ResX, ResY;
-float RoadScale, VehicleScale, MirrorScale;
+float RoadScale, VehicleScale, MirrorScale, VehicleReflectionBrightness;
 float SkyboxOrientation = -8000;
 float VehichleSkyboxRenderDist = 0.00625;
 float RVMSkyboxRenderDist = 0.0185;
@@ -230,6 +230,7 @@ void Init()
 	ForceEnableMirror = iniReader.ReadInteger("GENERAL", "ForceEnableMirror", 1);
 	RestoreSkybox = iniReader.ReadInteger("GENERAL", "RestoreSkybox", 1);
 	ExtendRenderDistance = iniReader.ReadInteger("GENERAL", "ExtendRenderDistance", 0);
+	VehicleReflectionBrightness = iniReader.ReadFloat("GENERAL", "VehicleReflectionBrightness", 1.0);
 
 	if (ResX <= 0 || ResY <= 0)
 	{
@@ -322,6 +323,17 @@ void Init()
 		injector::MakeJMP(0x5C4FAE, ExtendVehicleRenderDistanceCodeCave, true);
 		// Extends render RVM distance so skybox is visible
 		injector::WriteMemory<uint32_t>(0x7870D8, 0x461C4000, true);
+	}
+
+	if (VehicleReflectionBrightness)
+	{
+		static float VehicleReflectionIntensity = (0.5f * VehicleReflectionBrightness);
+		injector::WriteMemory(0x5BD57A, &VehicleReflectionIntensity, true);
+		injector::WriteMemory(0x5BD590, &VehicleReflectionIntensity, true);
+		injector::WriteMemory(0x5BD5A6, &VehicleReflectionIntensity, true);
+		injector::WriteMemory(0x5BD5BC, &VehicleReflectionIntensity, true);
+		injector::WriteMemory(0x5BD5E4, &VehicleReflectionIntensity, true);
+		injector::WriteMemory(0x5BD5FE, &VehicleReflectionIntensity, true);
 	}
 }
 

@@ -1,5 +1,11 @@
 # NFSU2 HD Reflections
 
+## How To Use  
+1. Download and extract [NFSU2HDReflections.zip](https://github.com/AeroWidescreen/NFSU2HDReflections/releases).  
+2. Move the scripts folder to the game's install folder.  
+3. Download and extract [Ultimate-ASI-Loader.zip](https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases).  
+4. Move dinput8.dll to the game's install folder.  
+
 ## Features
 - ResolutionX : Controls the horizontal resolution of reflections.  
 - ResolutionY : Controls the vertical resolution of reflections. 
@@ -13,6 +19,7 @@
 - ForceEnableMirror : Rearview mirror will be visible for all camera views.  
 - RestoreSkybox : Adds the skybox to reflections.  
 - ExtendRenderDistance : Increases the render distance of vehicle reflections and the rearview mirror.  
+- VehicleReflectionBrightness : Controls the intensity of vehicle reflections.  
 
 ## Credits
 [Aero_](https://github.com/AeroWidescreen) : Creator of NFSU2 HD Reflections.  
